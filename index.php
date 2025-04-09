@@ -65,7 +65,7 @@ if (isset($_SESSION['user_id']) && isset($_SESSION['user_type'])) {
                 </div>
             </div>
             <div class="w-full md:w-1/2">
-                <img src="img/fitness.jpg" alt="Fitness" class="rounded w-full">
+                <img src="img/fitness.png" alt="Fitness" class="rounded w-2/4 mx-auto">
             </div>
         </div>
 

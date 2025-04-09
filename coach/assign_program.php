@@ -1,18 +1,6 @@
 <?php
 session_start();
 
-// Session timeout functionality - 5 minutes
-$session_timeout = 300; // 5 minutes in seconds
-if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > $session_timeout)) {
-    // Last activity was more than 5 minutes ago
-    session_unset();     // Unset all session variables
-    session_destroy();   // Destroy the session
-    header("Location: ../login.php?timeout=1");
-    exit();
-}
-// Update last activity time
-$_SESSION['last_activity'] = time();
-
 include_once '../includes/db_connect.php';
 include_once '../includes/functions.php';
 

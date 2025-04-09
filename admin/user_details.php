@@ -1,18 +1,6 @@
 <?php
 session_start();
 
-// Session timeout functionality - 5 minutes
-$session_timeout = 300; // 5 minutes in seconds
-if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > $session_timeout)) {
-    // Last activity was more than 5 minutes ago
-    session_unset();     // Unset all session variables
-    session_destroy();   // Destroy the session
-    header("Location: ../login.php?timeout=1");
-    exit();
-}
-// Update last activity time
-$_SESSION['last_activity'] = time();
-
 include_once '../includes/db_connect.php';
 include_once '../includes/functions.php';
 
@@ -32,6 +20,9 @@ if (!isset($_GET['id'])) {
 }
 
 $user_id = (int)$_GET['id'];
+
+// Get unread messages count 
+$unread_count = count_unread_messages($admin_id);
 
 // Get user details
 $user_query = "SELECT * FROM users WHERE id = $user_id";
@@ -135,6 +126,14 @@ if ($user['user_type'] == 'customer') {
     <link rel="stylesheet" href="../css/style.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        .collapse {
+            transition: all 0.2s ease-in-out;
+        }
+        .rotate-180 {
+            transform: rotate(180deg);
+        }
+    </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
     <nav class="bg-gray-800 text-white">
@@ -162,6 +161,14 @@ if ($user['user_type'] == 'customer') {
                         </li>
                         <li>
                             <a class="text-gray-300 hover:text-white block py-2" href="reports.php">Reports</a>
+                        </li>
+                        <li>
+                            <a class="text-gray-300 hover:text-white block py-2 flex items-center" href="messages.php">
+                                Messages
+                                <?php if ($unread_count > 0): ?>
+                                    <span class="ml-1 px-2 py-0.5 text-xs rounded-full bg-red-600"><?php echo $unread_count; ?></span>
+                                <?php endif; ?>
+                            </a>
                         </li>
                     </ul>
                     <div class="relative mt-4 md:mt-0 md:ml-4">
@@ -290,147 +297,150 @@ if ($user['user_type'] == 'customer') {
                         </div>
                         <div class="p-4">
                             <?php if (count($programs) > 0): ?>
-                                <div class="space-y-2">
+                                <div class="space-y-4">
                                     <?php foreach ($programs as $index => $program): ?>
-                                        <div class="border border-gray-200 rounded-lg overflow-hidden">
-                                            <div class="border-b border-gray-200 bg-gray-50" id="heading<?php echo $index; ?>">
-                                                <button 
-                                                    class="flex items-center justify-between w-full px-4 py-3 text-left focus:outline-none" 
-                                                    data-bs-toggle="collapse" 
-                                                    data-bs-target="#collapse<?php echo $index; ?>"
-                                                    aria-expanded="<?php echo $index === 0 ? 'true' : 'false'; ?>" 
-                                                    onclick="toggleCollapse('collapse<?php echo $index; ?>')">
-                                                    <div class="flex-1 flex items-center">
-                                                        <div class="flex-grow">
-                                                            <span class="font-medium"><?php echo $program['name']; ?></span>
-                                                            <span class="ml-2 <?php 
-                                                                if ($program['program_status'] == 'completed') echo 'bg-green-100 text-green-800';
-                                                                else if ($program['program_status'] == 'approved') echo 'bg-blue-100 text-blue-800';
-                                                                else if ($program['program_status'] == 'rejected') echo 'bg-red-100 text-red-800';
-                                                                else echo 'bg-gray-100 text-gray-800';
-                                                            ?> px-2.5 py-0.5 rounded-full text-xs font-medium">
-                                                                <?php echo ucfirst($program['program_status']); ?>
-                                                            </span>
+                                        <div class="border-2 border-gray-300 rounded-lg overflow-hidden bg-white shadow-md hover:shadow-lg transition-shadow duration-300">
+                                            <!-- Program header - always visible -->
+                                            <div class="border-b-2 border-gray-300 bg-blue-50 px-4 py-4">
+                                                <div class="flex items-center justify-between">
+                                                    <div class="flex-grow">
+                                                        <span class="font-bold text-lg text-blue-800"><?php echo $program['name']; ?></span>
+                                                        <span class="ml-2 <?php 
+                                                            if ($program['program_status'] == 'completed') echo 'bg-green-100 text-green-800 border border-green-300';
+                                                            else if ($program['program_status'] == 'approved') echo 'bg-blue-100 text-blue-800 border border-blue-300';
+                                                            else if ($program['program_status'] == 'rejected') echo 'bg-red-100 text-red-800 border border-red-300';
+                                                            else echo 'bg-gray-100 text-gray-800 border border-gray-300';
+                                                        ?> px-2.5 py-0.5 rounded-full text-xs font-medium">
+                                                            <?php echo ucfirst($program['program_status']); ?>
+                                                        </span>
+                                                    </div>
+                                                    <div class="w-32 flex items-center ml-3 bg-white p-2 rounded-lg border border-gray-200">
+                                                        <div class="w-full bg-gray-200 rounded-full h-2 mr-2">
+                                                            <div class="bg-blue-600 h-2 rounded-full" style="width: <?php echo $program['progress_percentage']; ?>%"></div>
                                                         </div>
-                                                        <div class="w-24 flex items-center ml-3">
-                                                            <div class="w-full bg-gray-200 rounded-full h-1.5 mr-2">
-                                                                <div class="bg-green-600 h-1.5 rounded-full" style="width: <?php echo $program['progress_percentage']; ?>%"></div>
-                                                            </div>
-                                                            <span class="text-xs text-gray-600"><?php echo $program['progress_percentage']; ?>%</span>
+                                                        <span class="text-xs font-bold text-blue-800"><?php echo $program['progress_percentage']; ?>%</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Program content - directly visible -->
+                                            <div class="p-5 bg-white">
+                                                <div class="mb-5">
+                                                    <h6 class="font-bold text-gray-800 mb-3 border-b pb-2">Program Details</h6>
+                                                    <p class="text-gray-700 mb-3 leading-relaxed"><?php echo $program['description']; ?></p>
+                                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                                                        <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors duration-200">
+                                                            <p class="text-sm text-gray-700"><span class="font-bold text-gray-800">Difficulty:</span> <?php echo ucfirst($program['difficulty']); ?></p>
+                                                        </div>
+                                                        <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors duration-200">
+                                                            <p class="text-sm text-gray-700"><span class="font-bold text-gray-800">Duration:</span> <?php echo $program['duration']; ?> weeks</p>
+                                                        </div>
+                                                        <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors duration-200">
+                                                            <p class="text-sm text-gray-700"><span class="font-bold text-gray-800">Assigned:</span> <?php echo date('F d, Y', strtotime($program['assigned_date'])); ?></p>
                                                         </div>
                                                     </div>
-                                                    <svg class="w-5 h-5 transform transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                                                    </svg>
-                                                </button>
-                                            </div>
-                                            <div id="collapse<?php echo $index; ?>" class="collapse <?php echo $index === 0 ? 'block' : 'hidden'; ?>">
-                                                <div class="p-4">
-                                                    <div class="mb-4">
-                                                        <h6 class="font-medium mb-2">Program Details:</h6>
-                                                        <p class="text-gray-700 mb-2"><?php echo $program['description']; ?></p>
-                                                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
-                                                            <div class="bg-gray-50 p-3 rounded-lg">
-                                                                <p class="text-sm text-gray-700"><span class="font-medium">Difficulty:</span> <?php echo ucfirst($program['difficulty']); ?></p>
-                                                            </div>
-                                                            <div class="bg-gray-50 p-3 rounded-lg">
-                                                                <p class="text-sm text-gray-700"><span class="font-medium">Duration:</span> <?php echo $program['duration']; ?> weeks</p>
-                                                            </div>
-                                                            <div class="bg-gray-50 p-3 rounded-lg">
-                                                                <p class="text-sm text-gray-700"><span class="font-medium">Assigned:</span> <?php echo date('M d, Y', strtotime($program['assigned_date'])); ?></p>
-                                                            </div>
+                                                </div>
+                                                
+                                                <?php if ($program['pending_approvals'] > 0): ?>
+                                                    <div class="p-4 bg-amber-50 border-l-4 border-amber-500 rounded-md mb-5 shadow-sm">
+                                                        <div class="flex items-center">
+                                                            <i class="fas fa-exclamation-triangle text-amber-500 mr-2 text-lg"></i>
+                                                            <p class="text-sm font-medium text-amber-700">This program has <?php echo $program['pending_approvals']; ?> step(s) awaiting coach approval</p>
                                                         </div>
-                                                        <div class="mt-4">
-                                                            <p class="text-sm font-medium mb-1">Overall Progress:</p>
-                                                            <div class="flex items-center">
-                                                                <div class="w-full bg-gray-200 rounded-full h-2 mr-2">
-                                                                    <div class="bg-green-600 h-2 rounded-full" style="width: <?php echo $program['progress_percentage']; ?>%"></div>
-                                                                </div>
-                                                                <span class="text-sm font-medium"><?php echo $program['progress_percentage']; ?>%</span>
-                                                            </div>
-                                                        </div>
+                                                    </div>
+                                                <?php endif; ?>
+                                                
+                                                <!-- Program Steps Section -->
+                                                <div class="mt-6 border-t-2 border-gray-200 pt-5">
+                                                    <div class="flex items-center mb-4">
+                                                        <i class="fas fa-list-ol text-blue-600 mr-2"></i>
+                                                        <h6 class="font-bold text-blue-800 text-lg">Program Steps (<?php echo count($program['steps']); ?>)</h6>
                                                     </div>
                                                     
-                                                    <?php if ($program['pending_approvals'] > 0): ?>
-                                                        <div class="p-3 bg-amber-50 border-l-4 border-amber-500 rounded mb-4">
+                                                    <?php if (empty($program['steps'])): ?>
+                                                        <div class="p-4 bg-red-50 border border-red-200 rounded-md text-red-700 shadow-sm">
                                                             <div class="flex items-center">
-                                                                <i class="fas fa-exclamation-triangle text-amber-500 mr-2"></i>
-                                                                <p class="text-sm text-amber-700">This program has <?php echo $program['pending_approvals']; ?> step(s) awaiting coach approval</p>
+                                                                <i class="fas fa-exclamation-circle text-red-500 mr-2"></i>
+                                                                <p>No steps found for this program.</p>
                                                             </div>
+                                                        </div>
+                                                    <?php else: ?>
+                                                        <div class="space-y-5">
+                                                            <?php foreach ($program['steps'] as $step): ?>
+                                                                <?php 
+                                                                    $step_status = 'pending';
+                                                                    $step_notes = '';
+                                                                    $completion_date = null;
+                                                                    
+                                                                    if (isset($program['step_progress'][$step['id']])) {
+                                                                        $progress = $program['step_progress'][$step['id']];
+                                                                        $step_status = $progress['status'];
+                                                                        $step_notes = $progress['notes'];
+                                                                        $completion_date = $progress['completion_date'];
+                                                                    }
+                                                                    
+                                                                    // Set style based on status
+                                                                    if ($step_status == 'completed') {
+                                                                        $status_class = 'bg-green-50 border-green-300';
+                                                                        $status_icon = '<i class="fas fa-check-circle text-green-500 mr-2 text-lg"></i>';
+                                                                        $status_text = 'Completed';
+                                                                        $badge_class = 'bg-green-100 text-green-800 border border-green-300';
+                                                                    } else if ($step_status == 'in_progress') {
+                                                                        $status_class = 'bg-blue-50 border-blue-300';
+                                                                        $status_icon = '<i class="fas fa-spinner fa-spin text-blue-500 mr-2 text-lg"></i>';
+                                                                        $status_text = 'In Progress';
+                                                                        $badge_class = 'bg-blue-100 text-blue-800 border border-blue-300';
+                                                                    } else if ($step_status == 'pending_approval') {
+                                                                        $status_class = 'bg-amber-50 border-amber-300';
+                                                                        $status_icon = '<i class="fas fa-hourglass-half text-amber-500 mr-2 text-lg"></i>';
+                                                                        $status_text = 'Awaiting Approval';
+                                                                        $badge_class = 'bg-amber-100 text-amber-800 border border-amber-300';
+                                                                    } else {
+                                                                        $status_class = 'bg-gray-50 border-gray-300';
+                                                                        $status_icon = '<i class="far fa-circle text-gray-400 mr-2 text-lg"></i>';
+                                                                        $status_text = 'Pending';
+                                                                        $badge_class = 'bg-gray-100 text-gray-800 border border-gray-300';
+                                                                    }
+                                                                ?>
+                                                                
+                                                                <div class="p-5 border-2 rounded-lg shadow-sm <?php echo $status_class; ?> hover:shadow-md transition-shadow duration-200">
+                                                                    <div class="flex justify-between items-center border-b pb-3 mb-3">
+                                                                        <h6 class="text-base font-bold flex items-center">
+                                                                            <?php echo $status_icon; ?> 
+                                                                            <span class="mr-2 text-blue-800">Step <?php echo $step['step_number']; ?>:</span> <?php echo $step['title']; ?>
+                                                                        </h6>
+                                                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium <?php echo $badge_class; ?>">
+                                                                            <?php echo $status_text; ?>
+                                                                        </span>
+                                                                    </div>
+                                                                    <div class="mt-3 text-sm text-gray-700 leading-relaxed"><?php echo nl2br($step['description']); ?></div>
+                                                                    <div class="mt-3 flex flex-wrap gap-3">
+                                                                        <div class="text-xs bg-white px-3 py-2 rounded-md border border-gray-200 text-gray-700">
+                                                                            <i class="far fa-clock text-blue-500 mr-1"></i>
+                                                                            <span class="font-bold">Recommended:</span> <?php echo $step['duration']; ?>
+                                                                        </div>
+                                                                        
+                                                                        <?php if ($completion_date): ?>
+                                                                            <div class="text-xs bg-white px-3 py-2 rounded-md border border-gray-200 text-gray-700">
+                                                                                <i class="fas fa-calendar-check text-green-500 mr-1"></i> 
+                                                                                <span class="font-bold">Completed:</span> <?php echo date('M d, Y', strtotime($completion_date)); ?>
+                                                                            </div>
+                                                                        <?php endif; ?>
+                                                                    </div>
+                                                                    
+                                                                    <?php if ($step_notes): ?>
+                                                                        <div class="mt-4 p-3 bg-white rounded-md border border-gray-200 text-sm">
+                                                                            <div class="flex items-center mb-2">
+                                                                                <i class="fas fa-comment-dots text-blue-500 mr-2"></i>
+                                                                                <span class="font-bold text-blue-800">Coach Notes:</span>
+                                                                            </div>
+                                                                            <p class="text-gray-700 pl-6"><?php echo nl2br($step_notes); ?></p>
+                                                                        </div>
+                                                                    <?php endif; ?>
+                                                                </div>
+                                                            <?php endforeach; ?>
                                                         </div>
                                                     <?php endif; ?>
-                                                    
-                                                    <h6 class="font-medium mb-3">Program Steps:</h6>
-                                                    <div class="space-y-3">
-                                                        <?php foreach ($program['steps'] as $step): ?>
-                                                            <?php 
-                                                                $step_status = 'pending';
-                                                                $step_notes = '';
-                                                                $completion_date = null;
-                                                                
-                                                                if (isset($program['step_progress'][$step['id']])) {
-                                                                    $progress = $program['step_progress'][$step['id']];
-                                                                    $step_status = $progress['status'];
-                                                                    $step_notes = $progress['notes'];
-                                                                    $completion_date = $progress['completion_date'];
-                                                                }
-                                                                
-                                                                $status_class = '';
-                                                                $status_icon = '';
-                                                                
-                                                                if ($step_status == 'completed') {
-                                                                    $status_class = 'bg-green-50 border-green-200';
-                                                                    $status_icon = '<i class="fas fa-check-circle text-green-500 mr-2"></i>';
-                                                                    $status_text = 'Completed';
-                                                                    $badge_class = 'bg-green-100 text-green-800';
-                                                                } else if ($step_status == 'in_progress') {
-                                                                    $status_class = 'bg-blue-50 border-blue-200';
-                                                                    $status_icon = '<i class="fas fa-spinner fa-spin text-blue-500 mr-2"></i>';
-                                                                    $status_text = 'In Progress';
-                                                                    $badge_class = 'bg-blue-100 text-blue-800';
-                                                                } else if ($step_status == 'pending_approval') {
-                                                                    $status_class = 'bg-amber-50 border-amber-200';
-                                                                    $status_icon = '<i class="fas fa-hourglass-half text-amber-500 mr-2"></i>';
-                                                                    $status_text = 'Awaiting Approval';
-                                                                    $badge_class = 'bg-amber-100 text-amber-800';
-                                                                } else {
-                                                                    $status_class = 'bg-gray-50 border-gray-200';
-                                                                    $status_icon = '<i class="far fa-circle text-gray-400 mr-2"></i>';
-                                                                    $status_text = 'Pending';
-                                                                    $badge_class = 'bg-gray-100 text-gray-800';
-                                                                }
-                                                            ?>
-                                                            
-                                                            <div class="p-3 border rounded-md <?php echo $status_class; ?>">
-                                                                <div class="flex justify-between items-center">
-                                                                    <h6 class="text-sm font-medium flex items-center">
-                                                                        <?php echo $status_icon; ?> 
-                                                                        <span class="mr-2">Step <?php echo $step['step_number']; ?>:</span> <?php echo $step['title']; ?>
-                                                                    </h6>
-                                                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <?php echo $badge_class; ?>">
-                                                                        <?php echo $status_text; ?>
-                                                                    </span>
-                                                                </div>
-                                                                <div class="mt-2 text-sm text-gray-700"><?php echo nl2br($step['description']); ?></div>
-                                                                <div class="mt-2 text-xs text-gray-500">
-                                                                    <span class="font-medium">Recommended:</span> <?php echo $step['duration']; ?>
-                                                                </div>
-                                                                <?php if ($completion_date): ?>
-                                                                    <div class="mt-2 text-xs text-gray-500 flex items-center">
-                                                                        <i class="fas fa-calendar-check mr-1 text-green-500"></i> 
-                                                                        <span class="font-medium mr-1">Completed:</span> <?php echo date('M d, Y', strtotime($completion_date)); ?>
-                                                                    </div>
-                                                                <?php endif; ?>
-                                                                
-                                                                <?php if ($step_notes): ?>
-                                                                    <div class="mt-2 p-2 bg-white rounded border border-gray-100 text-xs">
-                                                                        <span class="font-medium block mb-1">Coach Notes:</span> 
-                                                                        <p class="text-gray-700"><?php echo nl2br($step_notes); ?></p>
-                                                                    </div>
-                                                                <?php endif; ?>
-                                                            </div>
-                                                        <?php endforeach; ?>
-                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -488,10 +498,11 @@ if ($user['user_type'] == 'customer') {
     
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Navbar toggle for mobile
+            console.log('DOM fully loaded');
+            
+            // Basic mobile menu toggle
             const navbarToggle = document.getElementById('navbarToggle');
             const navbarMenu = document.getElementById('navbarMenu');
-            
             if (navbarToggle) {
                 navbarToggle.addEventListener('click', function() {
                     navbarMenu.classList.toggle('hidden');
@@ -501,14 +512,12 @@ if ($user['user_type'] == 'customer') {
             // User dropdown toggle
             const userDropdown = document.getElementById('userDropdown');
             const userDropdownMenu = document.getElementById('userDropdownMenu');
-            
             if (userDropdown && userDropdownMenu) {
                 userDropdown.addEventListener('click', function(e) {
                     e.stopPropagation();
                     userDropdownMenu.classList.toggle('hidden');
                 });
                 
-                // Close dropdown when clicking outside
                 document.addEventListener('click', function() {
                     if (!userDropdownMenu.classList.contains('hidden')) {
                         userDropdownMenu.classList.add('hidden');
@@ -516,50 +525,61 @@ if ($user['user_type'] == 'customer') {
                 });
             }
             
-            // Toggle collapse functionality (to replace Bootstrap's collapse)
+            // Very simple toggle function that just toggles display
             window.toggleCollapse = function(id) {
+                console.log('Toggle called for: ' + id);
                 const element = document.getElementById(id);
-                const button = element.previousElementSibling.querySelector('button');
-                const icon = button.querySelector('svg');
                 
-                if (element.classList.contains('hidden')) {
-                    // Hide all other open collapses first
-                    document.querySelectorAll('.collapse').forEach(function(collapse) {
-                        if (collapse.id !== id && !collapse.classList.contains('hidden')) {
-                            collapse.classList.remove('block');
-                            collapse.classList.add('hidden');
-                            const collapseIcon = collapse.previousElementSibling.querySelector('button svg');
-                            if (collapseIcon) {
-                                collapseIcon.classList.remove('rotate-180');
-                            }
-                        }
-                    });
-                    
-                    // Show the clicked collapse
-                    element.classList.remove('hidden');
-                    element.classList.add('block');
-                    icon.classList.add('rotate-180');
+                if (!element) {
+                    console.error('Element not found: ' + id);
+                    return;
+                }
+                
+                // Close all other collapses
+                document.querySelectorAll('.collapse').forEach(function(collapse) {
+                    if (collapse.id !== id) {
+                        collapse.style.display = 'none';
+                    }
+                });
+                
+                // Toggle this one
+                if (element.style.display === 'none' || element.style.display === '') {
+                    element.style.display = 'block';
+                    console.log('Showing ' + id);
                 } else {
-                    element.classList.remove('block');
-                    element.classList.add('hidden');
-                    icon.classList.remove('rotate-180');
+                    element.style.display = 'none';
+                    console.log('Hiding ' + id);
                 }
             };
             
-            // Initialize all collapses
-            document.querySelectorAll('.collapse').forEach(function(collapse, index) {
-                // Only keep the first one open by default if needed
-                if (index !== 0) {
-                    collapse.classList.remove('block');
-                    collapse.classList.add('hidden');
+            // Debug - check all collapse elements
+            const collapses = document.querySelectorAll('.collapse');
+            console.log('Found ' + collapses.length + ' collapse elements');
+            
+            // Force first one to be visible by default and rest hidden
+            collapses.forEach(function(collapse, index) {
+                if (index === 0) {
+                    collapse.style.display = 'block';
+                    console.log('Set first collapse visible: ' + collapse.id);
                 } else {
-                    // Make sure the icon for the first item is rotated if it's open
-                    const firstIcon = collapse.previousElementSibling.querySelector('button svg');
-                    if (firstIcon && !collapse.classList.contains('hidden')) {
-                        firstIcon.classList.add('rotate-180');
-                    }
+                    collapse.style.display = 'none';
                 }
             });
+            
+            // Function to directly show steps in emergency mode
+            window.showStepsDirectly = function(id) {
+                const directStepsDiv = document.getElementById(id);
+                if (directStepsDiv) {
+                    // Toggle visibility
+                    if (directStepsDiv.style.display === 'none' || directStepsDiv.style.display === '') {
+                        directStepsDiv.style.display = 'block';
+                    } else {
+                        directStepsDiv.style.display = 'none';
+                    }
+                } else {
+                    console.error('Direct steps container not found:', id);
+                }
+            };
         });
     </script>
 </body>

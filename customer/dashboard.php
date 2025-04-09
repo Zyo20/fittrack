@@ -15,6 +15,7 @@ $_SESSION['last_activity'] = time();
 
 include_once '../includes/db_connect.php';
 include_once '../includes/functions.php';
+include_once '../includes/feature_announcements.php';
 
 // Check if user is logged in and is a customer
 if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] != 'customer') {
@@ -170,8 +171,9 @@ function getBmiCategory($bmi) {
     <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@2.1.0" defer></script>
 </head>
-<body class="bg-gray-100">
-<nav class="bg-gray-800 text-white">
+<body class="bg-gray-100 text-gray-800">
+
+    <nav class="bg-gray-800 text-white">
         <div class="container mx-auto px-4 py-3">
             <div class="flex flex-wrap justify-between items-center">
                 <a class="text-xl font-bold" href="dashboard.php">OpFit Customer</a>
@@ -237,27 +239,31 @@ function getBmiCategory($bmi) {
             </div>
         </div>
         
-        <!-- Status cards -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div>
+        <!-- Stats Widgets -->
+        <div class="flex flex-wrap -mx-2 mb-4">
+            <!-- Feature Announcements -->
+            <?php display_feature_announcements(); ?>
+            
+            <!-- Status cards -->
+            <div class="w-full md:w-1/3 px-2 mb-4">
                 <a href="coach_details.php?id=<?php echo $coach ? htmlspecialchars($coach['id']) : ''; ?>" class="block">
-                    <div class="bg-blue-600 text-white rounded-lg shadow-md p-4">
+                    <div class="bg-blue-600 text-white rounded-lg shadow-md p-6">
                         <div class="flex justify-between items-center">
                             <div>
-                                <h6 class="text-xs font-medium uppercase opacity-75">My Coach</h6>
-                                <h2 class="text-2xl font-bold mt-1"><?php echo $coach ? htmlspecialchars($coach['name']) : 'Not assigned'; ?></h2>
+                                <h6 class="text-sm font-semibold uppercase">My Coach</h6>
+                                <h2 class="text-3xl font-bold"><?php echo $coach ? htmlspecialchars($coach['name']) : 'Not assigned'; ?></h2>
                             </div>
                             <i class="fas fa-user-tie text-4xl opacity-50"></i>
                         </div>
                     </div>
                 </a>
             </div>
-            <div>
-                <div class="bg-green-600 text-white rounded-lg shadow-md p-4">
+            <div class="w-full md:w-1/3 px-2 mb-4">
+                <div class="bg-green-600 text-white rounded-lg shadow-md p-6">
                     <div class="flex justify-between items-center">
                         <div>
-                            <h6 class="text-xs font-medium uppercase opacity-75">Active Programs</h6>
-                            <h2 class="text-2xl font-bold mt-1">
+                            <h6 class="text-sm font-semibold uppercase">Active Programs</h6>
+                            <h2 class="text-3xl font-bold">
                                 <?php 
                                 echo count(array_filter($programs, function($p) { 
                                     return $p['status'] == 'approved'; 
@@ -269,12 +275,12 @@ function getBmiCategory($bmi) {
                     </div>
                 </div>
             </div>
-            <div>
-                <div class="bg-cyan-600 text-white rounded-lg shadow-md p-4">
+            <div class="w-full md:w-1/3 px-2 mb-4">
+                <div class="bg-cyan-600 text-white rounded-lg shadow-md p-6">
                     <div class="flex justify-between items-center">
                         <div>
-                            <h6 class="text-xs font-medium uppercase opacity-75">Progress Records</h6>
-                            <h2 class="text-2xl font-bold mt-1"><?php echo count($progress_records); ?></h2>
+                            <h6 class="text-sm font-semibold uppercase">Progress Records</h6>
+                            <h2 class="text-3xl font-bold"><?php echo count($progress_records); ?></h2>
                         </div>
                         <i class="fas fa-chart-line text-4xl opacity-50"></i>
                     </div>

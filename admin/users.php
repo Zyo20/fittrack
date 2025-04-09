@@ -1,18 +1,6 @@
 <?php
 session_start();
 
-// Session timeout functionality - 5 minutes
-$session_timeout = 300; // 5 minutes in seconds
-if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > $session_timeout)) {
-    // Last activity was more than 5 minutes ago
-    session_unset();     // Unset all session variables
-    session_destroy();   // Destroy the session
-    header("Location: ../login.php?timeout=1");
-    exit();
-}
-// Update last activity time
-$_SESSION['last_activity'] = time();
-
 include_once '../includes/db_connect.php';
 include_once '../includes/functions.php';
 
@@ -24,6 +12,9 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] != 'admin') {
 
 $user_id = $_SESSION['user_id'];
 $user_name = $_SESSION['user_name'];
+
+// Get unread messages count 
+$unread_count = count_unread_messages($user_id);
 
 // Process filter
 $user_type_filter = isset($_GET['type']) ? $_GET['type'] : '';
@@ -103,7 +94,7 @@ $result = mysqli_query($conn, $query);
         <div class="container mx-auto px-4 py-3">
             <div class="flex flex-wrap justify-between items-center">
                 <a class="text-xl font-bold" href="dashboard.php">OpFit Admin</a>
-                <button class="md:hidden" type="button" id="navbarToggle">
+                <button class="md:hidden" type="button" id="navbarToggle" onclick="toggleMobileMenu()"> 
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                     </svg>
@@ -124,6 +115,14 @@ $result = mysqli_query($conn, $query);
                         </li>
                         <li>
                             <a class="text-gray-300 hover:text-white block py-2" href="reports.php">Reports</a>
+                        </li>
+                        <li>
+                            <a class="text-gray-300 hover:text-white block py-2 flex items-center" href="messages.php">
+                                Messages
+                                <?php if ($unread_count > 0): ?>
+                                    <span class="ml-1 px-2 py-0.5 text-xs rounded-full bg-red-600"><?php echo $unread_count; ?></span>
+                                <?php endif; ?>
+                            </a>
                         </li>
                     </ul>
                     <div class="relative mt-4 md:mt-0 md:ml-4">
@@ -290,14 +289,20 @@ $result = mysqli_query($conn, $query);
     <script src="../js/tailwind-utilities.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Mobile menu toggle
-            const navbarToggle = document.getElementById('navbarToggle');
-            if (navbarToggle) {
-                navbarToggle.addEventListener('click', function() {
-                    const menu = document.getElementById('navbarMenu');
-                    menu.classList.toggle('hidden');
-                });
+        // Toggle mobile navigation function
+        function toggleMobileMenu() {
+            console.log('Toggle function called directly');
+            const menu = document.getElementById('navbarMenu');
+            if (menu) {
+                if (menu.classList.contains('hidden')) {
+                    menu.classList.remove('hidden');
+                    menu.classList.add('block');
+                } else {
+                    menu.classList.add('hidden');
+                    menu.classList.remove('block');
+                }
             }
+        }
             
             // User dropdown toggle
             const userDropdown = document.getElementById('userDropdown');

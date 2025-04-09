@@ -1,18 +1,6 @@
 <?php
 session_start();
 
-// Session timeout functionality - 5 minutes
-$session_timeout = 300; // 5 minutes in seconds
-if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > $session_timeout)) {
-    // Last activity was more than 5 minutes ago
-    session_unset();     // Unset all session variables
-    session_destroy();   // Destroy the session
-    header("Location: ../login.php?timeout=1");
-    exit();
-}
-// Update last activity time
-$_SESSION['last_activity'] = time();
-
 include_once '../includes/db_connect.php';
 include_once '../includes/functions.php';
 
@@ -144,7 +132,7 @@ if (isset($_POST['update_step_progress'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Customer Details - FitTrack</title>
+    <title>Customer Details - OpFit</title>
     <link rel="stylesheet" href="../css/style.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -153,7 +141,7 @@ if (isset($_POST['update_step_progress'])) {
     <nav class="bg-gray-800 text-white">
         <div class="container mx-auto px-4 py-3">
             <div class="flex flex-wrap justify-between items-center">
-                <a class="text-xl font-bold" href="dashboard.php">FitTrack</a>
+                <a class="text-xl font-bold" href="dashboard.php">OpFit Coach</a>
                 <button class="md:hidden" type="button" id="navbarToggle">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />

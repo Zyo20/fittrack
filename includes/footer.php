@@ -1,4 +1,4 @@
-<footer class="fixed bottom-0 w-full bg-gray-800 text-white py-3">
+<footer class="relative w-full bg-gray-800 text-white py-3 mt-8">
     <div class="container mx-auto px-4">
         <div class="flex justify-between items-center">
             <p>&copy; <?php echo date('Y'); ?> OpFit - Gym Progress Tracking System</p>

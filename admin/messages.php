@@ -16,8 +16,8 @@ $_SESSION['last_activity'] = time();
 include_once '../includes/db_connect.php';
 include_once '../includes/functions.php';
 
-// Check if user is logged in and is a coach
-if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] != 'coach') {
+// Check if user is logged in and is an admin
+if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] != 'admin') {
     header("Location: ../login.php");
     exit();
 }
@@ -25,64 +25,39 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] != 'coach') {
 $user_id = $_SESSION['user_id'];
 $user_name = $_SESSION['user_name'];
 
-// Get all customers for this coach
-$customers = get_coach_customers($user_id);
+// Get unread messages count 
+$unread_count = count_unread_messages($user_id);
 
-// Get all admin users for messaging
-$admins_query = "SELECT id, name, email FROM users WHERE user_type = 'admin' ORDER BY name";
-$admins_result = mysqli_query($conn, $admins_query);
-$admins = [];
-while ($row = mysqli_fetch_assoc($admins_result)) {
-    $admins[] = $row;
+// Get all coaches
+$coaches_query = "SELECT id, name, email FROM users WHERE user_type = 'coach' ORDER BY name";
+$coaches_result = mysqli_query($conn, $coaches_query);
+$coaches = [];
+while ($row = mysqli_fetch_assoc($coaches_result)) {
+    $coaches[] = $row;
 }
 
-// If a specific customer is selected, show conversation
-$current_customer = null;
-$current_admin = null;
+// If a specific coach is selected, show conversation
+$current_coach = null;
 $messages = [];
 $last_message_id = 0;
 
-if (isset($_GET['customer_id'])) {
-    $customer_id = (int)$_GET['customer_id'];
+if (isset($_GET['coach_id'])) {
+    $coach_id = (int)$_GET['coach_id'];
     
-    // Verify this customer is assigned to the coach
-    foreach ($customers as $customer) {
-        if ($customer['customer_id'] == $customer_id) {
-            $current_customer = $customer;
+    // Verify this is a valid coach
+    foreach ($coaches as $coach) {
+        if ($coach['id'] == $coach_id) {
+            $current_coach = $coach;
             break;
         }
     }
     
-    if ($current_customer) {
-        // Mark messages from this customer as read
-        mark_messages_as_read($customer_id, $user_id);
+    if ($current_coach) {
+        // Mark messages from this coach as read
+        mark_messages_as_read($coach_id, $user_id);
         
-        // Get conversation with customer
-        $messages = get_conversation($user_id, $customer_id);
-        
-        // Get the ID of the last message
-        if (!empty($messages)) {
-            $last_message_id = end($messages)['id'];
-            reset($messages); // Reset the array pointer
-        }
-    }
-} elseif (isset($_GET['admin_id'])) {
-    $admin_id = (int)$_GET['admin_id'];
-    
-    // Verify this is a valid admin
-    foreach ($admins as $admin) {
-        if ($admin['id'] == $admin_id) {
-            $current_admin = $admin;
-            break;
-        }
-    }
-    
-    if ($current_admin) {
-        // Mark messages from this admin as read
-        mark_messages_as_read($admin_id, $user_id);
-        
-        // Get conversation with admin
-        $messages = get_conversation($user_id, $admin_id);
+        // Get conversation with coach
+        $messages = get_conversation($user_id, $coach_id);
         
         // Get the ID of the last message
         if (!empty($messages)) {
@@ -108,26 +83,8 @@ if (isset($_POST['send_message']) && isset($_POST['receiver_id']) && isset($_POS
         $_SESSION['error_message'] = "Error sending message";
     }
     
-    // Determine if we're redirecting to an admin or customer conversation
-    $redirect_param = '';
-    
-    // Check if receiver is an admin
-    $check_query = "SELECT user_type FROM users WHERE id = $receiver_id";
-    $check_result = mysqli_query($conn, $check_query);
-    if ($check_result && mysqli_num_rows($check_result) > 0) {
-        $user_type = mysqli_fetch_assoc($check_result)['user_type'];
-        if ($user_type == 'admin') {
-            $redirect_param = "admin_id=$receiver_id";
-        } else {
-            $redirect_param = "customer_id=$receiver_id";
-        }
-    } else {
-        // Default to customer_id if we can't determine user type
-        $redirect_param = "customer_id=$receiver_id";
-    }
-    
     // Redirect to avoid form resubmission
-    header("Location: messages.php?$redirect_param");
+    header("Location: messages.php?coach_id=" . $receiver_id);
     exit();
 }
 
@@ -145,7 +102,7 @@ unset($_SESSION['error_message']);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Messages - OpFit Coach</title>
+    <title>Messages - OpFit Admin</title>
     <link rel="stylesheet" href="../css/style.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -194,10 +151,10 @@ unset($_SESSION['error_message']);
     </style>
 </head>
 <body class="bg-gray-100">
-<nav class="bg-gray-800 text-white">
+    <nav class="bg-gray-800 text-white">
         <div class="container mx-auto px-4 py-3">
             <div class="flex flex-wrap justify-between items-center">
-                <a class="text-xl font-bold" href="dashboard.php">OpFit Coach</a>
+                <a class="text-xl font-bold" href="dashboard.php">OpFit Admin</a>
                 <button class="md:hidden" type="button" id="navbarToggle">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
@@ -209,10 +166,13 @@ unset($_SESSION['error_message']);
                             <a class="text-gray-300 hover:text-white block py-2" href="dashboard.php">Dashboard</a>
                         </li>
                         <li>
-                            <a class="text-gray-300 hover:text-white block py-2" href="customers.php">My Customers</a>
+                            <a class="text-gray-300 hover:text-white block py-2" href="users.php">Users</a>
                         </li>
                         <li>
                             <a class="text-gray-300 hover:text-white block py-2" href="programs.php">Programs</a>
+                        </li>
+                        <li>
+                            <a class="text-gray-300 hover:text-white block py-2" href="reports.php">Reports</a>
                         </li>
                         <li>
                             <a class="text-white font-medium block py-2" href="messages.php">Messages</a>
@@ -259,30 +219,30 @@ unset($_SESSION['error_message']);
             <div class="w-full md:w-1/3">
                 <div class="bg-white rounded-lg shadow-md overflow-hidden">
                     <div class="bg-blue-600 text-white px-4 py-3">
-                        <h5 class="font-medium">My Customers</h5>
+                        <h5 class="font-medium">Coaches</h5>
                     </div>
                     <div>
-                        <?php if (count($customers) > 0): ?>
+                        <?php if (count($coaches) > 0): ?>
                             <div class="contacts-list h-[500px] overflow-y-auto">
-                                <?php foreach ($customers as $customer): ?>
+                                <?php foreach ($coaches as $coach): ?>
                                     <?php 
-                                        $is_active = $current_customer && $current_customer['customer_id'] == $customer['customer_id']; 
+                                        $is_active = $current_coach && $current_coach['id'] == $coach['id']; 
                                         $unread_count = 0;
                                         
                                         // Check for unread messages
                                         foreach ($contacts as $contact) {
-                                            if ($contact['contact_id'] == $customer['customer_id']) {
+                                            if ($contact['contact_id'] == $coach['id']) {
                                                 $unread_count = $contact['unread_count'];
                                                 break;
                                             }
                                         }
                                     ?>
-                                    <a href="messages.php?customer_id=<?php echo $customer['customer_id']; ?>" 
+                                    <a href="messages.php?coach_id=<?php echo $coach['id']; ?>" 
                                        class="contact-item block px-4 py-3 border-b border-gray-200 hover:bg-gray-50 transition-all <?php echo $is_active ? 'bg-gray-100 border-l-4 border-blue-500' : ''; ?>">
                                         <div class="flex justify-between items-center">
                                             <div>
-                                                <i class="fas fa-user mr-2 text-gray-600"></i>
-                                                <span class="font-medium text-gray-800"><?php echo $customer['name']; ?></span>
+                                                <i class="fas fa-user-tie mr-2 text-gray-600"></i>
+                                                <span class="font-medium text-gray-800"><?php echo $coach['name']; ?></span>
                                             </div>
                                             <?php if ($unread_count > 0): ?>
                                                 <span class="unread-badge inline-block bg-red-500 text-white text-xs px-2 py-1 rounded-full">
@@ -290,60 +250,13 @@ unset($_SESSION['error_message']);
                                                 </span>
                                             <?php endif; ?>
                                         </div>
-                                        <small class="text-gray-500"><?php echo $customer['email']; ?></small>
+                                        <small class="text-gray-500"><?php echo $coach['email']; ?></small>
                                     </a>
                                 <?php endforeach; ?>
                             </div>
                         <?php else: ?>
                             <div class="p-6 text-center">
-                                <p class="text-gray-500">No customers assigned to you yet.</p>
-                            </div>
-                        <?php endif; ?>
-                    </div>
-                </div>
-                
-                <!-- Admin Contacts Section -->
-                <div class="bg-white rounded-lg shadow-md overflow-hidden mt-6">
-                    <div class="bg-gray-700 text-white px-4 py-3">
-                        <h5 class="font-medium">Admin Contacts</h5>
-                    </div>
-                    <div>
-                        <?php if (count($admins) > 0): ?>
-                            <div class="contacts-list max-h-[300px] overflow-y-auto">
-                                <?php foreach ($admins as $admin): ?>
-                                    <?php 
-                                        $is_active = $current_admin && $current_admin['id'] == $admin['id']; 
-                                        $unread_count = 0;
-                                        
-                                        // Check for unread messages
-                                        foreach ($contacts as $contact) {
-                                            if ($contact['contact_id'] == $admin['id'] && $contact['user_type'] == 'admin') {
-                                                $unread_count = $contact['unread_count'];
-                                                break;
-                                            }
-                                        }
-                                    ?>
-                                    <a href="messages.php?admin_id=<?php echo $admin['id']; ?>" 
-                                       class="contact-item block px-4 py-3 border-b border-gray-200 hover:bg-gray-50 transition-all <?php echo $is_active ? 'bg-gray-100 border-l-4 border-gray-700' : ''; ?>">
-                                        <div class="flex justify-between items-center">
-                                            <div>
-                                                <i class="fas fa-user-shield mr-2 text-gray-600"></i>
-                                                <span class="font-medium text-gray-800"><?php echo $admin['name']; ?></span>
-                                                <span class="ml-2 text-xs bg-gray-200 text-gray-700 px-1 py-0.5 rounded">Admin</span>
-                                            </div>
-                                            <?php if ($unread_count > 0): ?>
-                                                <span class="unread-badge inline-block bg-red-500 text-white text-xs px-2 py-1 rounded-full">
-                                                    <?php echo $unread_count; ?>
-                                                </span>
-                                            <?php endif; ?>
-                                        </div>
-                                        <small class="text-gray-500"><?php echo $admin['email']; ?></small>
-                                    </a>
-                                <?php endforeach; ?>
-                            </div>
-                        <?php else: ?>
-                            <div class="p-6 text-center">
-                                <p class="text-gray-500">No admin contacts available.</p>
+                                <p class="text-gray-500">No coaches in the system yet.</p>
                             </div>
                         <?php endif; ?>
                     </div>
@@ -352,12 +265,12 @@ unset($_SESSION['error_message']);
             
             <div class="w-full md:w-2/3">
                 <div class="bg-white rounded-lg shadow-md overflow-hidden">
-                    <?php if ($current_customer): ?>
+                    <?php if ($current_coach): ?>
                         <div class="bg-blue-600 text-white px-4 py-3">
                             <div class="flex justify-between items-center">
                                 <h5 class="font-medium">
-                                    <i class="fas fa-user mr-2"></i>
-                                    Chat with <?php echo $current_customer['name']; ?>
+                                    <i class="fas fa-user-tie mr-2"></i>
+                                    Chat with Coach <?php echo $current_coach['name']; ?>
                                 </h5>
                             </div>
                         </div>
@@ -387,67 +300,13 @@ unset($_SESSION['error_message']);
                                 <?php else: ?>
                                     <div class="text-center text-gray-500 py-10">
                                         <i class="fas fa-comments text-5xl mb-4"></i>
-                                        <p>Start a conversation with <?php echo $current_customer['name']; ?>!</p>
+                                        <p>Start a conversation with Coach <?php echo $current_coach['name']; ?>!</p>
                                     </div>
                                 <?php endif; ?>
                             </div>
                             <div class="border-t border-gray-200 p-4 bg-gray-50">
                                 <form id="message-form" action="javascript:void(0);" method="post">
-                                    <input type="hidden" name="receiver_id" id="receiver_id" value="<?php echo $current_customer ? $current_customer['customer_id'] : ''; ?>">
-                                    <input type="hidden" name="last_message_id" id="last_message_id" value="<?php echo $last_message_id; ?>">
-                                    <div class="flex">
-                                        <textarea class="flex-grow border border-gray-300 rounded-l-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" 
-                                                  name="message" id="message-input" placeholder="Type your message..." rows="2" required></textarea>
-                                        <button class="bg-blue-600 hover:bg-blue-700 text-white rounded-r-lg px-4 py-2 flex items-center transition" 
-                                                type="submit" id="send-button">
-                                            <i class="fas fa-paper-plane mr-1"></i> Send
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    <?php elseif ($current_admin): ?>
-                        <div class="bg-blue-600 text-white px-4 py-3">
-                            <div class="flex justify-between items-center">
-                                <h5 class="font-medium">
-                                    <i class="fas fa-user mr-2"></i>
-                                    Chat with <?php echo $current_admin['name']; ?>
-                                </h5>
-                            </div>
-                        </div>
-                        <div>
-                            <div class="message-container p-4" id="message-container">
-                                <?php if (count($messages) > 0): ?>
-                                    <?php foreach ($messages as $message): ?>
-                                        <?php 
-                                            $is_sent = $message['sender_id'] == $user_id;
-                                            $message_class = $is_sent ? 'sent' : 'received';
-                                            $time = date('h:i A, M d', strtotime($message['created_at']));
-                                            $is_read = isset($message['is_read']) ? $message['is_read'] : false;
-                                        ?>
-                                        <div class="message <?php echo $message_class; ?>" data-message-id="<?php echo $message['id']; ?>">
-                                            <?php echo nl2br(htmlspecialchars($message['message'])); ?>
-                                            <div class="message-time">
-                                                <?php echo $time; ?>
-                                                <?php if ($is_sent): ?>
-                                                    <span class="read-status">
-                                                        <i class="fas <?php echo $is_read ? 'fa-check-double text-blue-600' : 'fa-check'; ?>" 
-                                                           title="<?php echo $is_read ? 'Read' : 'Sent'; ?>"></i>
-                                                    </span>
-                                                <?php endif; ?>
-                                            </div>
-                                        </div>
-                                    <?php endforeach; ?>
-                                <?php else: ?>
-                                    <div class="text-center text-gray-500 py-10">
-                                        <i class="fas fa-comments text-5xl mb-4"></i>
-                                        <p>Start a conversation with <?php echo $current_admin['name']; ?>!</p>
-                                    </div>
-                                <?php endif; ?>
-                            </div>
-                            <div class="border-t border-gray-200 p-4 bg-gray-50">
-                                <form id="message-form" action="javascript:void(0);" method="post">
-                                    <input type="hidden" name="receiver_id" id="receiver_id" value="<?php echo $current_admin ? $current_admin['id'] : ''; ?>">
+                                    <input type="hidden" name="receiver_id" id="receiver_id" value="<?php echo $current_coach ? $current_coach['id'] : ''; ?>">
                                     <input type="hidden" name="last_message_id" id="last_message_id" value="<?php echo $last_message_id; ?>">
                                     <div class="flex">
                                         <textarea class="flex-grow border border-gray-300 rounded-l-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" 
@@ -463,8 +322,8 @@ unset($_SESSION['error_message']);
                     <?php else: ?>
                         <div class="p-12 text-center">
                             <i class="fas fa-comments text-6xl text-gray-400 mb-4"></i>
-                            <h5 class="text-xl font-medium text-gray-700 mb-2">Select a Customer</h5>
-                            <p class="text-gray-500">Select a customer from the list to start a conversation.</p>
+                            <h5 class="text-xl font-medium text-gray-700 mb-2">Select a Coach</h5>
+                            <p class="text-gray-500">Select a coach from the list to start a conversation.</p>
                         </div>
                     <?php endif; ?>
                 </div>
@@ -565,10 +424,6 @@ unset($_SESSION['error_message']);
                 formData.append('receiver_id', receiverId.value);
                 formData.append('message', message);
                 
-                // Check if we're sending to an admin or customer
-                const urlParams = new URLSearchParams(window.location.search);
-                const isAdmin = urlParams.has('admin_id');
-                
                 // Send message
                 fetch('messages.php', {
                     method: 'POST',
@@ -599,36 +454,6 @@ unset($_SESSION['error_message']);
                 })
                 .catch(error => {
                     console.error('Error sending message:', error);
-                });
-            }
-            
-            // Function to update sidebar unread counts
-            function updateSidebarUnreadCounts(customerId, newUnreadCount) {
-                // Find the contact in the sidebar
-                const contactItems = document.querySelectorAll('.contact-item');
-                contactItems.forEach(item => {
-                    const href = item.getAttribute('href');
-                    if (href && href.includes(`customer_id=${customerId}`)) {
-                        // Find badge if it exists
-                        let badge = item.querySelector('.unread-badge');
-                        
-                        if (newUnreadCount > 0) {
-                            if (badge) {
-                                badge.textContent = newUnreadCount;
-                            } else {
-                                // Create new badge
-                                const badgeContainer = item.querySelector('.flex');
-                                if (badgeContainer) {
-                                    const newBadge = document.createElement('span');
-                                    newBadge.className = 'unread-badge inline-block bg-red-500 text-white text-xs px-2 py-1 rounded-full';
-                                    newBadge.textContent = newUnreadCount;
-                                    badgeContainer.appendChild(newBadge);
-                                }
-                            }
-                        } else if (badge) {
-                            badge.remove();
-                        }
-                    }
                 });
             }
             
@@ -692,75 +517,6 @@ unset($_SESSION['error_message']);
             if (receiverId.value) {
                 startPolling();
             }
-            
-            // Poll for updates to all conversations for sidebar
-            function pollForAllConversations() {
-                // Only if we're on the messages page and have customers
-                if (document.querySelector('.contacts-list')) {
-                    fetch('../includes/get_chat_contacts.php')
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.contacts) {
-                                // Update sidebar unread counts
-                                data.contacts.forEach(contact => {
-                                    // Skip current conversation, it's handled by the regular polling
-                                    if (receiverId.value && contact.contact_id == receiverId.value) return;
-                                    
-                                    updateSidebarUnreadCounts(contact.contact_id, contact.unread_count);
-                                });
-                                
-                                // Update navbar count
-                                updateNavbarBadge(data.total_unread);
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error polling for all conversations:', error);
-                        });
-                }
-            }
-            
-            // Function to update the navbar unread message badge
-            function updateNavbarBadge(unreadCount) {
-                // Find the Messages nav link
-                const messagesNavLink = document.querySelector('a[href="messages.php"]:not(.block)');
-                if (!messagesNavLink) return;
-                
-                // Check if badge already exists
-                let badge = messagesNavLink.querySelector('.badge');
-                
-                if (unreadCount > 0) {
-                    if (!badge) {
-                        // Create new badge
-                        badge = document.createElement('span');
-                        badge.className = 'badge inline-block bg-red-500 text-white text-xs px-2 py-1 rounded-full ml-1';
-                        messagesNavLink.appendChild(badge);
-                    }
-                    badge.textContent = unreadCount;
-                } else if (badge) {
-                    badge.remove();
-                }
-            }
-            
-            // Direct check for unread messages (useful when page first loads)
-            function checkUnreadMessages() {
-                fetch('../includes/get_unread_count.php')
-                    .then(response => response.json())
-                    .then(data => {
-                        updateNavbarBadge(data.unread_count);
-                    })
-                    .catch(error => {
-                        console.error('Error checking unread messages:', error);
-                    });
-            }
-            
-            // Initial check
-            checkUnreadMessages();
-            
-            // Poll for all conversations every 10 seconds to update sidebar
-            setInterval(pollForAllConversations, 10000);
-            
-            // Also check for unread messages every 5 seconds for more responsive UI
-            setInterval(checkUnreadMessages, 5000);
         });
     </script>
 </body>

@@ -15,6 +15,7 @@ $_SESSION['last_activity'] = time();
 
 include_once '../includes/db_connect.php';
 include_once '../includes/functions.php';
+include_once '../includes/feature_announcements.php';
 
 // Check if user is logged in and is a coach
 if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] != 'coach') {
@@ -84,7 +85,8 @@ while ($row = mysqli_fetch_assoc($recent_progress_result)) {
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
-<body class="bg-gray-100">
+<body class="bg-gray-100 text-gray-800">
+
     <nav class="bg-gray-800 text-white">
         <div class="container mx-auto px-4 py-3">
             <div class="flex flex-wrap justify-between items-center">
@@ -133,26 +135,17 @@ while ($row = mysqli_fetch_assoc($recent_progress_result)) {
     </nav>
 
     <div class="container mx-auto px-4 py-4">
-        <div class="flex flex-wrap mb-4">
-            <div class="w-full">
+        <div class="flex flex-wrap -mx-2">
+            <div class="w-full px-2">
                 <h1 class="text-2xl font-bold mb-4">Coach Dashboard</h1>
-                
-                <?php if (isset($status_success)): ?>
-                    <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4" role="alert">
-                        <p><?php echo $status_success; ?></p>
-                    </div>
-                <?php endif; ?>
-                
-                <?php if (isset($status_error)): ?>
-                    <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4" role="alert">
-                        <p><?php echo $status_error; ?></p>
-                    </div>
-                <?php endif; ?>
             </div>
         </div>
         
-        <!-- Stats Summary -->
-        <div class="flex flex-wrap -mx-2 mb-6">
+        <!-- Stats Widgets -->
+        <div class="flex flex-wrap -mx-2 mb-4">
+            <!-- Feature Announcements -->
+            <?php display_feature_announcements(); ?>
+            
             <div class="w-full md:w-1/3 px-2 mb-4">
                 <div class="bg-blue-600 text-white rounded-lg shadow-md p-6">
                     <div class="flex justify-between items-center">

@@ -140,4 +140,14 @@
     h2 {
         font-size: 1.5rem;
     }
+    
+    /* Fix for content spacing on mobile to prevent footer overlap */
+    .container {
+        padding-bottom: 2rem;
+    }
+    
+    /* Ensure messages and other scrollable containers have proper bottom space */
+    .chat-container, .scrollable-content {
+        margin-bottom: 2rem;
+    }
 }

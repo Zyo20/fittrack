@@ -15,6 +15,7 @@ $_SESSION['last_activity'] = time();
 
 include_once '../includes/db_connect.php';
 include_once '../includes/functions.php';
+include_once '../includes/feature_announcements.php';
 
 // Check if user is logged in and is an admin
 if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] != 'admin') {
@@ -24,6 +25,9 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] != 'admin') {
 
 $user_id = $_SESSION['user_id'];
 $user_name = $_SESSION['user_name'];
+
+// Get unread messages count 
+$unread_count = count_unread_messages($user_id);
 
 // Initialize arrays for dashboard data
 $dashboard_data = [
@@ -158,19 +162,91 @@ $recent_requests = $dashboard_data['recent_requests'];
         .fa-angle-right {
             transition: transform 0.3s ease;
         }
+
+        /* Session timeout modal styles */
+        #sessionTimeoutModal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            width: 90%;
+        }
     </style>
+    <script>
+        // Session timeout handling
+        const sessionTimeout = <?php echo $session_timeout; ?> * 1000; // Convert to milliseconds
+        const warningTime = 60000; // Show warning 1 minute before timeout
+        let timeoutWarningShown = false;
+
+        function showTimeoutWarning() {
+            const modal = document.getElementById('sessionTimeoutModal');
+            modal.style.display = 'block';
+            timeoutWarningShown = true;
+        }
+
+        function extendSession() {
+            const modal = document.getElementById('sessionTimeoutModal');
+            modal.style.display = 'none';
+            timeoutWarningShown = false;
+            window.location.reload();
+        }
+
+        function logout() {
+            window.location.href = '../logout.php';
+        }
+
+        // Set up the timeout warning
+        setTimeout(function() {
+            showTimeoutWarning();
+        }, sessionTimeout - warningTime);
+
+        // Auto-logout after session timeout
+        setTimeout(function() {
+            if (!timeoutWarningShown) {
+                window.location.href = '../login.php?timeout=1';
+            }
+        }, sessionTimeout);
+    </script>
 </head>
 <body class="bg-gray-100 text-gray-800">
+    <!-- Session Timeout Modal -->
+    <div id="sessionTimeoutModal">
+        <div class="modal-content">
+            <h3 class="text-xl font-bold mb-4">Session Timeout Warning</h3>
+            <p class="mb-4">Your session will expire in 1 minute due to inactivity. Would you like to extend your session?</p>
+            <div class="flex justify-end space-x-4">
+                <button onclick="logout()" class="px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded">Logout</button>
+                <button onclick="extendSession()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded">Extend Session</button>
+            </div>
+        </div>
+    </div>
+
     <nav class="bg-gray-800 text-white">
         <div class="container mx-auto px-4 py-3">
             <div class="flex flex-wrap justify-between items-center">
                 <a class="text-xl font-bold" href="dashboard.php">OpFit Admin</a>
-                <button class="md:hidden" type="button" id="navbarToggle">
+                <button class="md:hidden" type="button" id="navbarToggle" onclick="toggleMobileMenu()"> 
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                     </svg>
                 </button>
-                <div class="hidden md:flex flex-col md:flex-row w-full md:w-auto mt-4 md:mt-0 items-center" id="navbarMenu">
+                <div class="hidden w-full md:flex flex-col md:flex-row md:w-auto mt-4 md:mt-0 items-center" id="navbarMenu">
                     <ul class="flex flex-col md:flex-row md:mr-6 space-y-2 md:space-y-0 md:space-x-6">
                         <li>
                             <a class="text-white font-medium block py-2" href="dashboard.php">Dashboard</a>
@@ -187,18 +263,30 @@ $recent_requests = $dashboard_data['recent_requests'];
                         <li>
                             <a class="text-gray-300 hover:text-white block py-2" href="reports.php">Reports</a>
                         </li>
+                        <li>
+                            <a class="text-gray-300 hover:text-white block py-2 flex items-center" href="messages.php">
+                                Messages
+                                <?php if ($unread_count > 0): ?>
+                                    <span class="ml-1 px-2 py-0.5 text-xs rounded-full bg-red-600"><?php echo $unread_count; ?></span>
+                                <?php endif; ?>
+                            </a>
+                        </li>
                     </ul>
-                    <div class="relative mt-4 md:mt-0 md:ml-4">
-                        <button id="userDropdown" class="flex items-center text-gray-300 hover:text-white py-2">
-                            <?php echo htmlspecialchars($user_name); ?>
-                            <svg class="ml-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                            </svg>
-                        </button>
-                        <div id="userDropdownMenu" class="absolute right-0 mt-2 py-2 w-48 bg-white rounded-md shadow-lg hidden z-10">
-                            <a href="../profile.php" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">Profile</a>
-                            <div class="border-t border-gray-100"></div>
-                            <a href="../logout.php" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">Logout</a>
+                    <div class="hidden md:block">
+                        <div class="relative">
+                            <div class="group">
+                                <button class="flex items-center text-sm px-4 py-2 leading-none rounded text-white hover:text-white hover:bg-gray-700 focus:outline-none" id="userDropdown">
+                                    <?php echo $user_name; ?>
+                                    <svg class="ml-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                    </svg>
+                                </button>
+                                <div id="userDropdownMenu" class="absolute right-0 mt-2 py-2 w-48 bg-white rounded-md shadow-lg hidden z-10">
+                                    <a href="../profile.php" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">Profile</a>
+                                    <div class="border-t border-gray-100"></div>
+                                    <a href="../logout.php" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">Logout</a>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -215,21 +303,8 @@ $recent_requests = $dashboard_data['recent_requests'];
         
         <!-- Stats Widgets -->
         <div class="flex flex-wrap -mx-2 mb-4">
-            <!-- New feature alert -->
-            <div class="w-full px-2 mb-3">
-                <div class="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded">
-                    <div class="flex">
-                        <div class="mr-3">
-                            <i class="fas fa-info-circle text-2xl"></i>
-                        </div>
-                        <div>
-                            <h5 class="font-bold">New Feature: First-Time Coach Selection</h5>
-                            <p>Customers are now required to choose a coach when they log in for the first time. This helps ensure every customer has immediate guidance and support from the beginning of their fitness journey.</p>
-                            <a href="assignments.php" class="inline-block mt-2 bg-white hover:bg-gray-100 text-blue-700 font-medium py-1 px-3 border border-blue-500 rounded text-sm">Manage Coach Assignments</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <!-- Feature Announcements -->
+            <?php display_feature_announcements(); ?>
             
             <div class="w-full md:w-1/4 px-2 mb-3">
                 <a href="users.php?type=customer" class="block">
@@ -412,30 +487,61 @@ $recent_requests = $dashboard_data['recent_requests'];
 
     <script src="../js/tailwind-utilities.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Mobile menu toggle
-            const navbarToggle = document.getElementById('navbarToggle');
-            if (navbarToggle) {
-                navbarToggle.addEventListener('click', function() {
-                    const menu = document.getElementById('navbarMenu');
-                    menu.classList.toggle('hidden');
-                });
+        // Toggle mobile navigation function
+        function toggleMobileMenu() {
+            console.log('Toggle function called directly');
+            const menu = document.getElementById('navbarMenu');
+            if (menu) {
+                if (menu.classList.contains('hidden')) {
+                    menu.classList.remove('hidden');
+                    menu.classList.add('block');
+                } else {
+                    menu.classList.add('hidden');
+                    menu.classList.remove('block');
+                }
             }
-            
-            // User dropdown toggle
-            const userDropdown = document.getElementById('userDropdown');
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            // Toggle user dropdown
+            const userDropdownButton = document.getElementById('userDropdown');
             const userDropdownMenu = document.getElementById('userDropdownMenu');
             
-            if (userDropdown && userDropdownMenu) {
-                userDropdown.addEventListener('click', function(e) {
+            userDropdownButton.addEventListener('click', function(e) {
+                e.stopPropagation();
+                userDropdownMenu.classList.toggle('hidden');
+            });
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!userDropdownButton.contains(e.target) && !userDropdownMenu.contains(e.target)) {
+                    userDropdownMenu.classList.add('hidden');
+                }
+            });
+            
+            // Toggle mobile navigation
+            const navbarToggle = document.getElementById('navbarToggle');
+            const navbarMenu = document.getElementById('navbarMenu');
+            
+            console.log('Toggle button exists:', !!navbarToggle);
+            console.log('Menu exists:', !!navbarMenu);
+            
+            if (navbarToggle) {
+                navbarToggle.addEventListener('click', function(e) {
+                    console.log('Toggle button clicked');
+                    e.preventDefault();
                     e.stopPropagation();
-                    userDropdownMenu.classList.toggle('hidden');
-                });
-                
-                // Close dropdown when clicking outside
-                document.addEventListener('click', function() {
-                    if (!userDropdownMenu.classList.contains('hidden')) {
-                        userDropdownMenu.classList.add('hidden');
+                    
+                    if (navbarMenu) {
+                        console.log('Current menu class:', navbarMenu.className);
+                        if (navbarMenu.classList.contains('hidden')) {
+                            navbarMenu.classList.remove('hidden');
+                            navbarMenu.classList.add('block');
+                        } else {
+                            navbarMenu.classList.add('hidden');
+                            navbarMenu.classList.remove('block');
+                        }
+                        console.log('After toggle class:', navbarMenu.className);
                     }
                 });
             }
