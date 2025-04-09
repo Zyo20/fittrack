@@ -1,0 +1,143 @@
+/* Custom Styles for FitTrack */
+
+/* These are custom styles that extend Tailwind's functionality */
+
+/* Additional animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+/* Custom colors and specific overrides */
+.text-special {
+    color: #4361ee;
+}
+
+.bg-custom-dark {
+    background-color: #2b2d42;
+}
+
+/* Custom Dashboard elements */
+.chart-container {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background-color: white;
+    border-radius: 0.375rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Message styling for chat */
+.message.sent {
+    background-color: #e9effd;
+    margin-left: auto;
+}
+
+.message.received {
+    background-color: #f3f4f6;
+    margin-right: auto;
+}
+
+.message-time {
+    color: #6b7280;
+    font-size: 0.75rem;
+}
+
+/* Ensuring tables look good when using Tailwind */
+.custom-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.custom-table th {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 2px solid #e5e7eb;
+    font-weight: 600;
+}
+
+.custom-table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.custom-table tr:hover {
+    background-color: #f9fafb;
+}
+
+/* Custom scrollbar for chat containers */
+.chat-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.chat-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.chat-container::-webkit-scrollbar-thumb {
+    background: #cbd5e0;
+    border-radius: 3px;
+}
+
+.chat-container::-webkit-scrollbar-thumb:hover {
+    background: #a0aec0;
+}
+
+/* Dark mode overrides - can be toggled with JavaScript */
+.dark-mode {
+    background-color: #1a202c;
+    color: #e2e8f0;
+}
+
+.dark-mode .bg-white {
+    background-color: #2d3748;
+}
+
+.dark-mode .text-gray-800 {
+    color: #e2e8f0;
+}
+
+.dark-mode .border-gray-300 {
+    border-color: #4a5568;
+}
+
+/* Print styles */
+@media print {
+    .no-print {
+        display: none;
+    }
+    
+    body {
+        font-size: 12pt;
+        color: #000;
+        background-color: #fff;
+    }
+    
+    .container {
+        width: 100%;
+        padding: 0;
+        margin: 0;
+    }
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+    .text-xl {
+        font-size: 1.1rem;
+    }
+    
+    h1 {
+        font-size: 1.75rem;
+    }
+    
+    h2 {
+        font-size: 1.5rem;
+    }
+}
