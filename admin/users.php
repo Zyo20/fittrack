@@ -88,6 +88,8 @@ $result = mysqli_query($conn, $query);
     <link rel="stylesheet" href="../css/style.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="../css/dark-mode.css">
+    <script src="../js/dark-mode.js" defer></script>
 </head>
 <body class="bg-gray-100 text-gray-800">
     <nav class="bg-gray-800 text-white">
@@ -100,6 +102,8 @@ $result = mysqli_query($conn, $query);
                     </svg>
                 </button>
                 <div class="hidden md:flex flex-col md:flex-row w-full md:w-auto mt-4 md:mt-0 items-center" id="navbarMenu">
+                    <!-- Add dark mode toggle -->
+                    <?php include_once '../includes/dark_mode_toggle.php'; ?>
                     <ul class="flex flex-col md:flex-row md:mr-6 space-y-2 md:space-y-0 md:space-x-6">
                         <li>
                             <a class="text-gray-300 hover:text-white block py-2" href="dashboard.php">Dashboard</a>
