@@ -2,8 +2,16 @@
 // Feature announcements array
 $feature_announcements = [
     [
-        'title' => 'Messaging System',
-        'description' => 'Our new messaging system provides real-time updates, read receipts, and unread message notifications. Communicate seamlessly with your coach or customers through our modern, scrollable chat interface.',
+        'title' => 'FitTrack Assistant Chatbot',
+        'description' => 'Our new AI assistant helps you find answers about using FitTrack. Click on the chat icon at the bottom right of any page to ask questions about programs, tracking progress, or system features.',
+        'link' => '#',
+        'link_text' => 'Try It Now',
+        'icon' => 'fa-solid fa-robot',
+        'admin_only_link' => false // Everyone can see this link
+    ],
+    [
+        'title' => 'Real-time Messaging',
+        'description' => 'Our messaging system provides real-time updates, read receipts, and unread message notifications. Communicate seamlessly with your coach or customers through our modern, scrollable chat interface.',
         'link' => 'messages.php',
         'link_text' => 'Check Messages',
         'icon' => 'fa-solid fa-message',
@@ -51,4 +59,4 @@ function display_feature_announcements() {
         </div>';
     }
 }
-?> 
+?>

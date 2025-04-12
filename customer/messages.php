@@ -615,6 +615,13 @@ unset($_SESSION['error_message']);
                         console.error('Error updating navbar badge:', error);
                     });
             }
+
+            // Send message when Enter key is pressed
+        messageInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
             
             // Initial update
             updateNavbarBadge();

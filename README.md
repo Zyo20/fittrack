@@ -9,6 +9,7 @@ FitTrack is a comprehensive web application built with PHP, MySQL, and Tailwind 
 - **Program Approval System**: Customers select programs, coaches approve or reject
 - **Progress Tracking**: Monitor customer's weight, height, and other metrics
 - **Workout Logging**: Record and track workout sessions with duration and notes
+- **FitTrack Assistant Chatbot**: AI-powered assistant to answer questions about the system
 - **Messaging System**: Communication between coaches and customers with read receipts
 - **Unread Message Notifications**: Visual indicators for unread messages in the navigation bar
 - **Mobile-Responsive Design**: Modern interface that works on all devices
@@ -46,7 +47,12 @@ FitTrack is a comprehensive web application built with PHP, MySQL, and Tailwind 
    php create_chat_table.php
    ```
 
-6. Ensure the web server has write permissions to the necessary directories:
+6. Set up the chatbot assistant:
+   ```
+   php setup_chatbot.php
+   ```
+
+7. Ensure the web server has write permissions to the necessary directories:
    ```
    chmod -R 755 img/
    ```
@@ -164,11 +170,14 @@ fittrack/
 ├── fittrack.sql
 ├── chat_table.sql
 ├── create_chat_table.php
+├── setup_chatbot.php
 └── README.md
 ```
 
 ## Recent Updates
 
+- Added FitTrack Assistant Chatbot for instant help with system navigation and questions (April 2025)
+- Enhanced homepage to highlight the chatbot feature with dedicated section
 - Added Tailwind CSS for modern, responsive UI
 - Enhanced user profile management
 - Improved program assignment workflow
@@ -177,4 +186,4 @@ fittrack/
 
 ## License
 
-This project is licensed under the MIT License. 
+This project is licensed under the MIT License.

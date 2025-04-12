@@ -69,7 +69,31 @@ if (isset($_SESSION['user_id']) && isset($_SESSION['user_type'])) {
             </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
+        <!-- New Feature Highlight Section -->
+        <div class="mt-12 bg-blue-50 border border-blue-200 rounded-lg p-6">
+            <div class="flex flex-col md:flex-row items-center">
+                <div class="md:w-1/6 text-center mb-4 md:mb-0">
+                    <i class="fas fa-robot text-5xl text-blue-500"></i>
+                </div>
+                <div class="md:w-5/6">
+                    <h2 class="text-2xl font-bold text-blue-700 mb-2">Introducing FitTrack Assistant</h2>
+                    <p class="text-gray-700 mb-3">Our new AI chatbot assistant helps you navigate FitTrack and answers your questions about programs, progress tracking, and more. Available on every page - just click the chat icon in the bottom-right corner!</p>
+                    <div class="flex justify-start">
+                        <a href="register.php" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-4 rounded mr-2">Try It Now</a>
+                        <a href="#features" class="border border-blue-500 text-blue-600 hover:bg-blue-100 text-sm font-medium py-2 px-4 rounded">Learn More</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mt-12" id="features">
+            <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                <div class="p-6 text-center">
+                    <i class="fas fa-robot text-3xl text-blue-500 mb-3"></i>
+                    <h3 class="text-xl font-semibold mb-2">FitTrack Assistant</h3>
+                    <p>Get instant answers about using FitTrack through our AI chatbot.</p>
+                </div>
+            </div>
             <div class="bg-white rounded-lg shadow-md overflow-hidden">
                 <div class="p-6 text-center">
                     <h3 class="text-xl font-semibold mb-2">Track Progress</h3>
@@ -102,4 +126,4 @@ if (isset($_SESSION['user_id']) && isset($_SESSION['user_type'])) {
     </script>
     <script src="js/script.js"></script>
 </body>
-</html> 
+</html>

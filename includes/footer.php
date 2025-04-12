@@ -11,6 +11,9 @@
     </div>
 </footer>
 
+<!-- Include the chatbot on all pages -->
+<?php include_once 'chatbot.php'; ?>
+
 <script>
     // Global script to ensure dropdowns are properly initialized
     document.addEventListener('DOMContentLoaded', function() {
@@ -39,4 +42,4 @@
             });
         });
     });
-</script> 
+</script>
